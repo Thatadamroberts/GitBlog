@@ -1,0 +1,44 @@
+[
+  {
+    "name": "weather-station", "url": "https://github.com/thatadamroberts/weather-station",
+    "homepageUrl": "https://example.com/weather", "description": "A Raspberry Pi weather station with a live dashboard.",
+    "stargazerCount": 42, "pushedAt": "2026-10-30T12:00:00Z", "isFork": false, "isArchived": false,
+    "openGraphImageUrl": "https://opengraph.githubassets.com/1/thatadamroberts/weather-station", "usesCustomOpenGraphImage": false,
+    "defaultBranchRef": { "name": "main" }, "primaryLanguage": { "name": "Python", "color": "#3572A5" },
+    "repositoryTopics": { "nodes": [{ "topic": { "name": "gitblog" } }, { "topic": { "name": "raspberry-pi" } }, { "topic": { "name": "iot" } }] },
+    "post": { "text": "---\ntitle: Weather Station\nsummary: Measuring my back garden, one reading a minute.\nfeatured: true\n---\n## Why I built it\n\nI wanted to know if my garden really is colder than the forecast says.\n\n![Wiring](wiring.jpg)\n\n## What I learned\n\n- Sensors drift.\n- See the [setup notes](../docs/setup.md).\n" },
+    "gitblogDir": { "entries": [{ "name": "post.md" }, { "name": "screenshot.png" }, { "name": "wiring.jpg" }] },
+    "readme": { "text": "# weather-station\n" }
+  },
+  {
+    "name": "tiny-todo", "url": "https://github.com/thatadamroberts/tiny-todo",
+    "homepageUrl": "", "description": "A to-do list in under 1 KB of JavaScript.",
+    "stargazerCount": 7, "pushedAt": "2026-09-01T12:00:00Z", "isFork": false, "isArchived": false,
+    "openGraphImageUrl": "https://opengraph.githubassets.com/1/thatadamroberts/tiny-todo", "usesCustomOpenGraphImage": false,
+    "defaultBranchRef": { "name": "main" }, "primaryLanguage": { "name": "JavaScript", "color": "#f1e05a" },
+    "repositoryTopics": { "nodes": [{ "topic": { "name": "gitblog" } }] },
+    "post": null, "gitblogDir": null,
+    "readme": { "text": "# tiny-todo\n\nA to-do list in under 1 KB.\n\n![demo](docs/demo.gif)\n\n## Usage\n\n```bash\nnpx serve .\n```\n\n## Why\n\nFor fun.\n\n## API\n\nThis section should be cut from the excerpt.\n" }
+  },
+  {
+    "name": "dotfiles", "url": "https://github.com/thatadamroberts/dotfiles",
+    "homepageUrl": null, "description": "My shell and editor setup.",
+    "stargazerCount": 1, "pushedAt": "2026-11-01T12:00:00Z", "isFork": false, "isArchived": false,
+    "openGraphImageUrl": "https://repository-images.githubusercontent.com/1/custom-preview", "usesCustomOpenGraphImage": true,
+    "defaultBranchRef": { "name": "main" }, "primaryLanguage": { "name": "Shell", "color": "#89e051" },
+    "repositoryTopics": { "nodes": [{ "topic": { "name": "gitblog" } }] },
+    "post": null, "gitblogDir": null, "readme": null
+  },
+  {
+    "name": "not-tagged", "url": "https://github.com/thatadamroberts/not-tagged", "homepageUrl": null, "description": "Should not appear.",
+    "stargazerCount": 0, "pushedAt": "2026-11-05T12:00:00Z", "isFork": false, "isArchived": false,
+    "openGraphImageUrl": "x", "usesCustomOpenGraphImage": false, "defaultBranchRef": { "name": "main" }, "primaryLanguage": null,
+    "repositoryTopics": { "nodes": [] }, "post": null, "gitblogDir": null, "readme": null
+  },
+  {
+    "name": "a-fork", "url": "https://github.com/thatadamroberts/a-fork", "homepageUrl": null, "description": "Forks are skipped.",
+    "stargazerCount": 0, "pushedAt": "2026-11-06T12:00:00Z", "isFork": true, "isArchived": false,
+    "openGraphImageUrl": "x", "usesCustomOpenGraphImage": false, "defaultBranchRef": { "name": "main" }, "primaryLanguage": null,
+    "repositoryTopics": { "nodes": [{ "topic": { "name": "gitblog" } }] }, "post": null, "gitblogDir": null, "readme": null
+  }
+]

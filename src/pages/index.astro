@@ -1,0 +1,40 @@
+---
+import Base from '../layouts/Base.astro';
+import { getProjects } from '../lib/github';
+import config from '../../site.config';
+
+const projects = await getProjects();
+const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
+---
+<Base>
+  <section class="intro">
+    <h1>{config.title}</h1>
+    <p>{config.bio}</p>
+  </section>
+
+  {projects.length === 0 && (
+    <p class="empty">
+      No projects yet. Add the <code>{config.topic}</code> topic to a public repository to show it here.
+    </p>
+  )}
+
+  <ul class="grid">
+    {projects.map((p) => (
+      <li class:list={['card', { featured: p.featured }]}>
+        <a href={`${base}projects/${p.slug}/`}>
+          <div class="thumb"><img src={p.image} alt={p.imageAlt} loading="lazy" /></div>
+          <div class="card-body">
+            <h2>{p.title}</h2>
+            {p.summary && <p>{p.summary}</p>}
+            <div class="meta">
+              {p.language && (
+                <span class="lang"><i style={`background:${p.languageColor ?? 'currentColor'}`}></i>{p.language}</span>
+              )}
+              {p.topics.slice(0, 3).map((t) => <span class="tag">{t}</span>)}
+            </div>
+          </div>
+        </a>
+      </li>
+    ))}
+  </ul>
+</Base>

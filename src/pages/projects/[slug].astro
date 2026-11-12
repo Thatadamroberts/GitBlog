@@ -1,0 +1,39 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getProjects, type Project } from '../../lib/github';
+
+export async function getStaticPaths() {
+  const projects = await getProjects();
+  return projects.map((project) => ({ params: { slug: project.slug }, props: { project } }));
+}
+
+const { project: p } = Astro.props as { project: Project };
+const updated = new Date(p.updatedAt).toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' });
+---
+<Base title={p.title} description={p.summary} image={p.image}>
+  <article class="project">
+    <a class="back" href={import.meta.env.BASE_URL}>← All projects</a>
+    <h1>{p.title}</h1>
+    {p.summary && <p class="lede">{p.summary}</p>}
+
+    <div class="actions">
+      <a class="button" href={p.url}>View on GitHub</a>
+      {p.homepage && <a class="button secondary" href={p.homepage}>Live site</a>}
+    </div>
+
+    <img class="hero" src={p.image} alt={p.imageAlt} />
+
+    <dl class="facts">
+      {p.language && <div><dt>Language</dt><dd>{p.language}</dd></div>}
+      <div><dt>Stars</dt><dd>{p.stars}</dd></div>
+      <div><dt>Updated</dt><dd>{updated}</dd></div>
+    </dl>
+    {p.topics.length > 0 && <div class="meta">{p.topics.map((t) => <span class="tag">{t}</span>)}</div>}
+
+    <div class="prose" set:html={p.html} />
+
+    {p.source === 'readme' && (
+      <p class="note">This text comes from the project's README. Add <code>.gitblog/post.md</code> to the repository to write about it here instead.</p>
+    )}
+  </article>
+</Base>
