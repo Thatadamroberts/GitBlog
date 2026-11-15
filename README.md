@@ -25,6 +25,8 @@ content lives in its own repository; this repo only holds the site.
    order: 1                      # manual sort (lower first); default: most recently pushed
    image: .gitblog/demo.gif      # override the hero image
    imageAlt: Dashboard showing today's readings
+   playable: true                # embed the game on its page (see below)
+   play: https://example.com/    # optional: where to play it, if not the repo's Website field
    ---
    ```
 
@@ -37,9 +39,23 @@ content lives in its own repository; this repo only holds the site.
 | Write-up | `.gitblog/post.md` → README (up to its third `##` section) → repo description |
 | Image | front-matter `image` → `.gitblog/screenshot.*` → social preview (Settings → Social preview) → GitHub's generated card |
 | Title / summary | front-matter → repo name / description |
-| Tags, language, stars, live-site link | the repo's topics, primary language, stars and *Website* field |
+| Tags, language, stars, live-site / Play link | the repo's topics, primary language, stars and *Website* field |
 
 Forks and archived repos are skipped.
+
+## Playable projects
+
+Projects that run in a browser get a green **▶ Play** button on their page and a Play badge on
+their card. The button links to the repo's *Website* field (or the `play:` URL in `post.md`) when
+either the post says `playable: true` or the repo has the `game` topic.
+
+With `playable: true`, the project page also embeds the game: the hero image becomes a cover with
+a Play button, and clicking it loads the game in place, with links to go full screen or open it in
+a new tab. Nothing loads until someone presses Play, so the page stays fast. Set `embed: false` to
+keep the Play button but skip the embed.
+
+A static web game can be published with a small GitHub Pages workflow in its own repo; set the
+repo's *Website* field to the Pages address (`https://<user>.github.io/<repo>/`).
 
 ## Running locally
 

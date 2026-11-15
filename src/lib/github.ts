@@ -10,6 +10,10 @@ export interface Project {
   summary: string;
   url: string;
   homepage: string | null;
+  /** Where to play it in a browser: front-matter `play`, or the Website field for games. */
+  play: string | null;
+  /** Embed the game on the project page (front-matter `playable: true`). */
+  embed: boolean;
   topics: string[];
   language: string | null;
   languageColor: string | null;
@@ -151,6 +155,14 @@ function toProject(repo: RepoNode): Project {
       ? rawUrl(repo, `.gitblog/${screenshot}`)
       : repo.openGraphImageUrl;
 
+  // Play link: an explicit `play:` URL, otherwise the repo's Website field when the
+  // post says it's playable or the repo is tagged as a game.
+  const homepage = repo.homepageUrl || null;
+  const playable = data.playable === true;
+  const play = typeof data.play === 'string' && /^https?:\/\//.test(data.play)
+    ? data.play
+    : (playable || topics.includes('game')) ? homepage : null;
+
   const title = data.title ?? repo.name;
   return {
     slug: repo.name.toLowerCase(),
@@ -158,7 +170,9 @@ function toProject(repo: RepoNode): Project {
     title,
     summary: data.summary ?? repo.description ?? '',
     url: repo.url,
-    homepage: repo.homepageUrl || null,
+    homepage,
+    play,
+    embed: Boolean(play) && playable && data.embed !== false,
     topics: topics.filter((t) => t !== config.topic),
     language: repo.primaryLanguage?.name ?? null,
     languageColor: repo.primaryLanguage?.color ?? null,
