@@ -17,11 +17,31 @@ const updated = new Date(p.updatedAt).toLocaleDateString('en-GB', { year: 'numer
     {p.summary && <p class="lede">{p.summary}</p>}
 
     <div class="actions">
-      <a class="button" href={p.url}>View on GitHub</a>
-      {p.homepage && <a class="button secondary" href={p.homepage}>Live site</a>}
+      {p.play && <a class="button play-button" href={p.play} data-play-start={p.embed ? '' : undefined}>▶ Play</a>}
+      <a class:list={['button', { secondary: p.play }]} href={p.url}>View on GitHub</a>
+      {p.homepage && p.homepage !== p.play && <a class="button secondary" href={p.homepage}>Live site</a>}
     </div>
 
-    <img class="hero" src={p.image} alt={p.imageAlt} />
+    {p.embed ? (
+      <figure class="player" id="play" data-src={p.play} data-title={`Play ${p.title}`}>
+        <div class="player-stage">
+          <img class="hero" src={p.image} alt={p.imageAlt} />
+          <button class="player-start" type="button" data-play-start>
+            <span class="player-icon" aria-hidden="true">▶</span>
+            <span>Play {p.title} here</span>
+          </button>
+        </div>
+        <figcaption class="player-bar">
+          <span>Runs in your browser. Click the game to give it the keyboard.</span>
+          <span class="player-links">
+            <button type="button" class="link-button" data-play-fullscreen hidden>Full screen</button>
+            <a href={p.play} target="_blank" rel="noopener">Open in a new tab ↗</a>
+          </span>
+        </figcaption>
+      </figure>
+    ) : (
+      <img class="hero" src={p.image} alt={p.imageAlt} />
+    )}
 
     <dl class="facts">
       {p.language && <div><dt>Language</dt><dd>{p.language}</dd></div>}
@@ -36,4 +56,31 @@ const updated = new Date(p.updatedAt).toLocaleDateString('en-GB', { year: 'numer
       <p class="note">This text comes from the project's README. Add <code>.gitblog/post.md</code> to the repository to write about it here instead.</p>
     )}
   </article>
+
+  {p.embed && (
+    <script is:inline>
+      (function () {
+        var player = document.getElementById('play');
+        if (!player) return;
+        var full = player.querySelector('[data-play-fullscreen]');
+        function start(e) {
+          if (e) e.preventDefault();
+          if (!player.classList.contains('playing')) {
+            var frame = document.createElement('iframe');
+            frame.src = player.dataset.src;
+            frame.title = player.dataset.title;
+            frame.allow = 'autoplay; fullscreen; gamepad';
+            frame.setAttribute('allowfullscreen', '');
+            frame.addEventListener('load', function () { frame.focus(); });
+            player.querySelector('.player-stage').replaceWith(frame);
+            player.classList.add('playing');
+            if (player.requestFullscreen) full.hidden = false;
+          }
+          player.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        document.querySelectorAll('[data-play-start]').forEach(function (el) { el.addEventListener('click', start); });
+        full.addEventListener('click', function () { player.requestFullscreen(); });
+      })();
+    </script>
+  )}
 </Base>
