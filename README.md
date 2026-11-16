@@ -39,9 +39,30 @@ content lives in its own repository; this repo only holds the site.
 | Write-up | `.gitblog/post.md` → README (up to its third `##` section) → repo description |
 | Image | front-matter `image` → `.gitblog/screenshot.*` → social preview (Settings → Social preview) → GitHub's generated card |
 | Title / summary | front-matter → repo name / description |
-| Tags, language, stars, live-site / Play link | the repo's topics, primary language, stars and *Website* field |
+| Type and "Built with" tags | the repo's topics and its main languages (see below) |
+| Stars, live-site / Play link | the repo's stars and *Website* field |
 
 Forks and archived repos are skipped.
+
+## Tags and filters
+
+The front page has two rows of filter chips, both built from GitHub:
+
+- **Type**: what a project is. These come from the repo's GitHub topics that are listed under
+  `types` in `site.config.ts` (to start with: `game`, `productivity`, `health`, `m365`, `history`,
+  `tool`). Tag a repo with the topic `game` and it appears under *Game*.
+- **Built with**: the repo's main languages (anything making up at least 10% of its code, ignoring
+  build-script languages such as Shell), followed by every other topic, such as `android`, `pwa`
+  or `jetpack-compose`.
+
+GitHub topics are lowercase, so `labels` in `site.config.ts` gives them display names
+(`m365` → *Microsoft 365*, `pwa` → *PWA*). Add a new type by adding its topic to `types` and a
+label if it needs one.
+
+Picking several chips in one row shows projects with any of them; picking chips in both rows
+narrows to projects matching both. The filter is kept in the address (for example
+`?type=game&tech=android`), so a filtered view can be shared. The tags on each card and project
+page link to that filter. Without JavaScript the filters are hidden and every project shows.
 
 ## Playable projects
 
