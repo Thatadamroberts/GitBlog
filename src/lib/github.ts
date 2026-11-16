@@ -3,6 +3,11 @@ import { marked } from 'marked';
 import { readFile } from 'node:fs/promises';
 import config from '../../site.config';
 
+export interface Tag {
+  slug: string;
+  label: string;
+}
+
 export interface Project {
   slug: string;
   name: string;
@@ -14,7 +19,10 @@ export interface Project {
   play: string | null;
   /** Embed the game on the project page (front-matter `playable: true`). */
   embed: boolean;
-  topics: string[];
+  /** What the project is: topics listed in `types` in site.config.ts. */
+  types: Tag[];
+  /** What it's built with: main languages plus every other topic. */
+  tech: Tag[];
   language: string | null;
   languageColor: string | null;
   stars: number;
@@ -41,6 +49,7 @@ query($login: String!, $cursor: String) {
         openGraphImageUrl usesCustomOpenGraphImage
         defaultBranchRef { name }
         primaryLanguage { name color }
+        languages(first: 10, orderBy: {field: SIZE, direction: DESC}) { totalSize edges { size node { name } } }
         repositoryTopics(first: 20) { nodes { topic { name } } }
         post: object(expression: "HEAD:.gitblog/post.md") { ... on Blob { text } }
         gitblogDir: object(expression: "HEAD:.gitblog") { ... on Tree { entries { name } } }
@@ -163,6 +172,7 @@ function toProject(repo: RepoNode): Project {
     ? data.play
     : (playable || topics.includes('game')) ? homepage : null;
 
+  const { types, tech } = classify(repo, topics);
   const title = data.title ?? repo.name;
   return {
     slug: repo.name.toLowerCase(),
@@ -173,7 +183,8 @@ function toProject(repo: RepoNode): Project {
     homepage,
     play,
     embed: Boolean(play) && playable && data.embed !== false,
-    topics: topics.filter((t) => t !== config.topic),
+    types,
+    tech,
     language: repo.primaryLanguage?.name ?? null,
     languageColor: repo.primaryLanguage?.color ?? null,
     stars: repo.stargazerCount,
@@ -185,6 +196,31 @@ function toProject(repo: RepoNode): Project {
     featured: Boolean(data.featured),
     order: typeof data.order === 'number' ? data.order : null,
   };
+}
+
+/** Lowercase, hyphenated form used in URLs and to match topics to languages. */
+export function slugify(name: string) {
+  return name.toLowerCase().replace(/#/g, '-sharp').replace(/\+/g, 'p').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
+export function tag(slug: string, fallback?: string): Tag {
+  return { slug, label: config.labels[slug] ?? fallback ?? slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) };
+}
+
+/** Types from topics; tech from the repo's main languages followed by its other topics. */
+function classify(repo: RepoNode, topics: string[]) {
+  const types = config.types.filter((t) => topics.includes(t)).map((t) => tag(t));
+  const tech: Tag[] = [];
+  const add = (t: Tag) => { if (!tech.some((x) => x.slug === t.slug)) tech.push(t); };
+  const langs = repo.languages;
+  for (const e of langs?.edges ?? []) {
+    if (config.ignoreLanguages.includes(e.node.name)) continue;
+    if (langs.totalSize && e.size / langs.totalSize < config.minLanguageShare) continue;
+    add(tag(slugify(e.node.name), e.node.name));
+  }
+  if (!tech.length && repo.primaryLanguage) add(tag(slugify(repo.primaryLanguage.name), repo.primaryLanguage.name));
+  for (const t of topics) if (t !== config.topic && !config.types.includes(t)) add(tag(t));
+  return { types, tech };
 }
 
 function escapeHtml(s: string) {

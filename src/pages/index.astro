@@ -1,10 +1,25 @@
 ---
 import Base from '../layouts/Base.astro';
-import { getProjects } from '../lib/github';
+import { getProjects, type Tag } from '../lib/github';
 import config from '../../site.config';
 
 const projects = await getProjects();
 const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
+
+// Filter chips with counts. Types keep the order from site.config.ts; tech is
+// sorted by how many projects use it, then alphabetically.
+function facet(pick: (p: (typeof projects)[number]) => Tag[]) {
+  const counts = new Map<string, { tag: Tag; n: number }>();
+  for (const p of projects) for (const t of pick(p)) {
+    const c = counts.get(t.slug) ?? { tag: t, n: 0 };
+    c.n++; counts.set(t.slug, c);
+  }
+  return [...counts.values()];
+}
+const typeChips = facet((p) => p.types).sort((a, b) => config.types.indexOf(a.tag.slug) - config.types.indexOf(b.tag.slug));
+const techChips = facet((p) => p.tech).sort((a, b) => b.n - a.n || a.tag.label.localeCompare(b.tag.label));
+const showFilters = projects.length > 1 && (typeChips.length > 0 || techChips.length > 1);
+const slugs = (tags: Tag[]) => tags.map((t) => t.slug).join(' ');
 ---
 <Base>
   <section class="intro">
@@ -18,26 +33,125 @@ const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
     </p>
   )}
 
+  {showFilters && (
+    <section class="filters" aria-label="Filter projects" data-filters hidden>
+      {typeChips.length > 0 && (
+        <div class="filter-row" data-facet="type">
+          <span class="filter-label">Type</span>
+          {typeChips.map(({ tag, n }) => (
+            <button type="button" class="chip chip-type" data-slug={tag.slug} aria-pressed="false">{tag.label} <span class="count">{n}</span></button>
+          ))}
+        </div>
+      )}
+      {techChips.length > 0 && (
+        <div class="filter-row" data-facet="tech">
+          <span class="filter-label">Built with</span>
+          {techChips.map(({ tag, n }) => (
+            <button type="button" class="chip" data-slug={tag.slug} aria-pressed="false">{tag.label} <span class="count">{n}</span></button>
+          ))}
+        </div>
+      )}
+      <p class="filter-status" aria-live="polite">
+        <span data-filter-summary></span>
+        <button type="button" class="link-button" data-filter-clear hidden>Clear filters</button>
+      </p>
+    </section>
+  )}
+
   <ul class="grid">
     {projects.map((p) => (
-      <li class:list={['card', { featured: p.featured }]}>
-        <a href={`${base}projects/${p.slug}/`}>
-          <div class="thumb">
-            <img src={p.image} alt={p.imageAlt} loading="lazy" />
-            {p.play && <span class="play-badge">▶ Play</span>}
+      <li class:list={['card', { featured: p.featured }]} data-type={slugs(p.types)} data-tech={slugs(p.tech)}>
+        <div class="thumb">
+          <img src={p.image} alt="" loading="lazy" />
+          {p.play && <span class="play-badge">▶ Play</span>}
+        </div>
+        <div class="card-body">
+          <h2><a class="card-link" href={`${base}projects/${p.slug}/`}>{p.title}</a></h2>
+          {p.summary && <p>{p.summary}</p>}
+          <div class="meta">
+            {p.types.map((t) => <a class="tag tag-type" href={`${base}?type=${t.slug}`} data-filter-facet="type" data-slug={t.slug}>{t.label}</a>)}
+            {p.tech.slice(0, 4).map((t) => <a class="tag" href={`${base}?tech=${t.slug}`} data-filter-facet="tech" data-slug={t.slug}>{t.label}</a>)}
           </div>
-          <div class="card-body">
-            <h2>{p.title}</h2>
-            {p.summary && <p>{p.summary}</p>}
-            <div class="meta">
-              {p.language && (
-                <span class="lang"><i style={`background:${p.languageColor ?? 'currentColor'}`}></i>{p.language}</span>
-              )}
-              {p.topics.slice(0, 3).map((t) => <span class="tag">{t}</span>)}
-            </div>
-          </div>
-        </a>
+        </div>
       </li>
     ))}
   </ul>
+
+  <p class="empty" data-no-match hidden>
+    No projects match those filters. <button type="button" class="link-button" data-filter-clear>Show everything</button>
+  </p>
+
+  {showFilters && (
+    <script is:inline>
+      (function () {
+        var bar = document.querySelector('[data-filters]');
+        if (!bar) return;
+        bar.hidden = false;
+        var cards = Array.prototype.slice.call(document.querySelectorAll('.card'));
+        var selected = { type: [], tech: [] };
+
+        // Read ?type=game,health&tech=kotlin from the address.
+        var params = new URLSearchParams(location.search);
+        ['type', 'tech'].forEach(function (f) {
+          var v = params.get(f);
+          if (v) selected[f] = v.split(',').filter(function (s) { return bar.querySelector('[data-facet="' + f + '"] [data-slug="' + s + '"]'); });
+        });
+
+        function matches(card, f) {
+          if (!selected[f].length) return true;
+          var have = (card.dataset[f] || '').split(' ');
+          return selected[f].some(function (s) { return have.indexOf(s) >= 0; });
+        }
+
+        function apply() {
+          var shown = 0;
+          cards.forEach(function (c) {
+            var ok = matches(c, 'type') && matches(c, 'tech');
+            c.hidden = !ok; if (ok) shown++;
+          });
+          bar.querySelectorAll('.chip').forEach(function (chip) {
+            var f = chip.parentNode.dataset.facet;
+            chip.setAttribute('aria-pressed', selected[f].indexOf(chip.dataset.slug) >= 0 ? 'true' : 'false');
+          });
+          var active = selected.type.length + selected.tech.length > 0;
+          document.querySelectorAll('[data-filter-clear]').forEach(function (b) { b.hidden = !active; });
+          bar.querySelector('[data-filter-summary]').textContent = active
+            ? 'Showing ' + shown + ' of ' + cards.length + ' projects.' : '';
+          document.querySelector('[data-no-match]').hidden = shown > 0;
+          document.querySelector('[data-no-match] [data-filter-clear]').hidden = false;
+
+          var q = new URLSearchParams();
+          if (selected.type.length) q.set('type', selected.type.join(','));
+          if (selected.tech.length) q.set('tech', selected.tech.join(','));
+          var qs = q.toString().replace(/%2C/g, ',');
+          history.replaceState(null, '', location.pathname + (qs ? '?' + qs : '') + location.hash);
+        }
+
+        function toggle(f, slug) {
+          var i = selected[f].indexOf(slug);
+          if (i >= 0) selected[f].splice(i, 1); else selected[f].push(slug);
+          apply();
+        }
+
+        bar.addEventListener('click', function (e) {
+          var chip = e.target.closest('.chip');
+          if (chip) toggle(chip.parentNode.dataset.facet, chip.dataset.slug);
+        });
+        // A tag on a card filters by just that tag.
+        document.querySelector('.grid').addEventListener('click', function (e) {
+          var t = e.target.closest('[data-filter-facet]');
+          if (!t) return;
+          e.preventDefault();
+          selected = { type: [], tech: [] };
+          selected[t.dataset.filterFacet] = [t.dataset.slug];
+          apply();
+          bar.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        });
+        document.querySelectorAll('[data-filter-clear]').forEach(function (b) {
+          b.addEventListener('click', function () { selected = { type: [], tech: [] }; apply(); });
+        });
+        apply();
+      })();
+    </script>
+  )}
 </Base>

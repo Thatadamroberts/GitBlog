@@ -8,6 +8,7 @@ export async function getStaticPaths() {
 }
 
 const { project: p } = Astro.props as { project: Project };
+const home = import.meta.env.BASE_URL.replace(/\/?$/, '/');
 const updated = new Date(p.updatedAt).toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' });
 ---
 <Base title={p.title} description={p.summary} image={p.image}>
@@ -48,7 +49,12 @@ const updated = new Date(p.updatedAt).toLocaleDateString('en-GB', { year: 'numer
       <div><dt>Stars</dt><dd>{p.stars}</dd></div>
       <div><dt>Updated</dt><dd>{updated}</dd></div>
     </dl>
-    {p.topics.length > 0 && <div class="meta">{p.topics.map((t) => <span class="tag">{t}</span>)}</div>}
+    {(p.types.length > 0 || p.tech.length > 0) && (
+      <div class="meta">
+        {p.types.map((t) => <a class="tag tag-type" href={`${home}?type=${t.slug}`}>{t.label}</a>)}
+        {p.tech.map((t) => <a class="tag" href={`${home}?tech=${t.slug}`}>{t.label}</a>)}
+      </div>
+    )}
 
     <div class="prose" set:html={p.html} />
 
