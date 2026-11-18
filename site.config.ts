@@ -1,8 +1,14 @@
 export default {
   /** GitHub user whose public repos are shown. */
   username: 'thatadamroberts',
-  /** Only public repos tagged with this topic appear on the site. */
+  /** Only repos tagged with this topic appear on the site. */
   topic: 'gitblog',
+  /**
+   * Also show private repos tagged with the topic. This needs a token that can read them, saved
+   * as the GITBLOG_TOKEN secret (see README). Only the .gitblog post, its images and basic repo
+   * details are published; the code stays private.
+   */
+  includePrivate: true,
   title: 'Projects',
   bio: 'Things I have built, and the stories behind them.',
 

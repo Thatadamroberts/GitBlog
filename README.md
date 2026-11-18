@@ -90,6 +90,33 @@ keep the Play button but skip the embed.
 A static web game can be published with a small GitHub Pages workflow in its own repo; set the
 repo's *Website* field to the Pages address (`https://<user>.github.io/<repo>/`).
 
+## Private repositories
+
+Private repos tagged `gitblog` can appear too. The site shows their `.gitblog` post, its images
+and basic repo details (name, description, languages, topics, stars). **The code stays private.**
+Instead of a "View on GitHub" button, their page says it's a private repository, and links in the
+post that would go to files on GitHub are shown as plain text.
+
+The deploy's built-in token can only read this repo, so private repos need a token of your own:
+
+1. Create a **fine-grained personal access token** (GitHub → Settings → Developer settings →
+   Personal access tokens → Fine-grained tokens).
+   - **Repository access:** *Only select repositories* (pick the private ones to show), or *All
+     repositories* if you'd rather not update the token each time you add one.
+   - **Permissions:** *Contents: Read-only*. *Metadata: Read-only* is added automatically.
+     Nothing else is needed.
+   - **Expiration:** your choice. When it expires, the deploy fails with an API error until you
+     replace it.
+2. In this repo, go to **Settings → Secrets and variables → Actions → New repository secret**.
+   Name it `GITBLOG_TOKEN` and paste the token.
+3. Run **Actions → Deploy site**.
+
+Without `GITBLOG_TOKEN`, the site shows public repos only. To hide private repos even when the
+token can see them, set `includePrivate: false` in `site.config.ts`.
+
+Images, for public and private repos alike, are downloaded during the build and served from this
+site (`/media/...`), rather than linked from `raw.githubusercontent.com`.
+
 ## Running locally
 
 ```bash
@@ -102,6 +129,9 @@ Or work offline from sample data:
 ```bash
 GITBLOG_FIXTURE=fixtures/repos.json npm run dev
 ```
+
+In offline mode, images come from `GITBLOG_FIXTURE_MEDIA=<folder>` if set, which should hold one
+folder per repo, named in lower case (for example `<folder>/skyreign/.gitblog/screenshot.jpg`).
 
 The username, topic, title and bio are set in `site.config.ts`.
 

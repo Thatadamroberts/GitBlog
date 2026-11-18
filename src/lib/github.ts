@@ -2,6 +2,7 @@ import matter from 'gray-matter';
 import { marked } from 'marked';
 import { readFile } from 'node:fs/promises';
 import config from '../../site.config';
+import { downloadAll, hasMedia, mediaUrl, remoteMediaUrl } from './media';
 
 export interface Tag {
   slug: string;
@@ -14,6 +15,8 @@ export interface Project {
   title: string;
   summary: string;
   url: string;
+  /** A private repo: its post is shown, but there's no public GitHub page to link to. */
+  private: boolean;
   homepage: string | null;
   /** Where to play it in a browser: front-matter `play`, or the Website field for games. */
   play: string | null;
@@ -27,7 +30,8 @@ export interface Project {
   languageColor: string | null;
   stars: number;
   updatedAt: string;
-  image: string;
+  /** Local copy of the hero image, or null when none could be downloaded. */
+  image: string | null;
   imageAlt: string;
   html: string;
   /** Where the write-up came from: the post file, the README, or only the description. */
@@ -41,11 +45,11 @@ const IMAGE_NAMES = ['png', 'jpg', 'jpeg', 'webp', 'gif'].map((e) => `screenshot
 const QUERY = `
 query($login: String!, $cursor: String) {
   user(login: $login) {
-    repositories(first: 50, after: $cursor, privacy: PUBLIC, ownerAffiliations: OWNER,
+    repositories(first: 50, after: $cursor, ownerAffiliations: OWNER,
                  orderBy: {field: PUSHED_AT, direction: DESC}) {
       pageInfo { hasNextPage endCursor }
       nodes {
-        name url homepageUrl description stargazerCount pushedAt isFork isArchived
+        name url homepageUrl description stargazerCount pushedAt isFork isArchived isPrivate
         openGraphImageUrl usesCustomOpenGraphImage
         defaultBranchRef { name }
         primaryLanguage { name color }
@@ -89,9 +93,9 @@ async function fetchRepos(): Promise<RepoNode[]> {
   return nodes;
 }
 
-function rawUrl(repo: RepoNode, path: string) {
-  const branch = repo.defaultBranchRef?.name ?? 'HEAD';
-  return `https://raw.githubusercontent.com/${config.username}/${repo.name}/${branch}/${path.replace(/^\.?\//, '')}`;
+/** Local copy of a file in the repo (downloaded at build time; see media.ts). */
+function fileUrl(repo: RepoNode, path: string) {
+  return mediaUrl(repo.name, repo.defaultBranchRef?.name ?? 'HEAD', path.replace(/^\.?\//, ''));
 }
 
 function blobUrl(repo: RepoNode, path: string) {
@@ -112,14 +116,20 @@ function resolvePath(baseDir: string, href: string) {
   return parts.join('/');
 }
 
-/** Render Markdown, pointing relative images at raw files and relative links at GitHub. */
+/**
+ * Render Markdown. Relative images become local copies. Relative links point at the file on
+ * GitHub, except in private repos, where visitors can't open them: those become plain text.
+ */
 function render(repo: RepoNode, md: string, baseDir: string) {
-  const html = marked.parse(md, { async: false }) as string;
-  return html
+  const html = (marked.parse(md, { async: false }) as string)
     .replace(/(<img\b[^>]*?\bsrc=")([^"]+)"/g, (m, pre, src) =>
-      isAbsolute(src) ? m : `${pre}${rawUrl(repo, resolvePath(baseDir, src))}"`)
-    .replace(/(<a\b[^>]*?\bhref=")([^"]+)"/g, (m, pre, href) =>
-      isAbsolute(href) ? m : `${pre}${blobUrl(repo, resolvePath(baseDir, href))}"`);
+      isAbsolute(src) ? m : `${pre}${fileUrl(repo, resolvePath(baseDir, src))}"`);
+  if (repo.isPrivate) {
+    return html.replace(/<a\b[^>]*?\bhref="([^"]+)"[^>]*>([\s\S]*?)<\/a>/g, (m, href, text) =>
+      isAbsolute(href) ? m : `<span>${text}</span>`);
+  }
+  return html.replace(/(<a\b[^>]*?\bhref=")([^"]+)"/g, (m, pre, href) =>
+    isAbsolute(href) ? m : `${pre}${blobUrl(repo, resolvePath(baseDir, href))}"`);
 }
 
 /** The README's opening: everything up to the third second-level heading. */
@@ -159,10 +169,12 @@ function toProject(repo: RepoNode): Project {
   // social preview (custom if set, otherwise the auto-generated card).
   const screenshot = IMAGE_NAMES.find((n) => entries.includes(n));
   const image = data.image
-    ? (isAbsolute(data.image) ? data.image : rawUrl(repo, data.image))
+    ? (isAbsolute(data.image) ? data.image : fileUrl(repo, data.image))
     : screenshot
-      ? rawUrl(repo, `.gitblog/${screenshot}`)
-      : repo.openGraphImageUrl;
+      ? fileUrl(repo, `.gitblog/${screenshot}`)
+      : repo.openGraphImageUrl
+        ? remoteMediaUrl(repo.name, 'preview.png', repo.openGraphImageUrl)
+        : null;
 
   // Play link: an explicit `play:` URL, otherwise the repo's Website field when the
   // post says it's playable or the repo is tagged as a game.
@@ -180,6 +192,7 @@ function toProject(repo: RepoNode): Project {
     title,
     summary: data.summary ?? repo.description ?? '',
     url: repo.url,
+    private: Boolean(repo.isPrivate),
     homepage,
     play,
     embed: Boolean(play) && playable && data.embed !== false,
@@ -265,17 +278,27 @@ function escapeHtml(s: string) {
 
 let cache: Promise<Project[]> | undefined;
 
-/** All repos tagged with the configured topic, featured first, then by `order`, then most recent. */
+/**
+ * All repos tagged with the configured topic (private ones too, when the token can see them and
+ * `includePrivate` is on), featured first, then by `order`, then most recent. Their images are
+ * downloaded before this resolves.
+ */
 export function getProjects(): Promise<Project[]> {
-  cache ??= fetchRepos().then((repos) =>
-    repos
+  cache ??= fetchRepos().then(async (repos) => {
+    const projects = repos
       .filter((r) => !r.isFork && !r.isArchived)
+      .filter((r) => config.includePrivate || !r.isPrivate)
       .filter((r) => r.repositoryTopics.nodes.some((n: any) => n.topic.name === config.topic))
       .map(toProject)
       .sort((a, b) =>
         Number(b.featured) - Number(a.featured) ||
         (a.order ?? Infinity) - (b.order ?? Infinity) ||
-        b.updatedAt.localeCompare(a.updatedAt)),
-  );
+        b.updatedAt.localeCompare(a.updatedAt));
+    await downloadAll();
+    // A hero image that couldn't be downloaded (e.g. a private repo's preview card) falls back to
+    // a placeholder rather than a broken image.
+    for (const p of projects) if (p.image && !isAbsolute(p.image) && !hasMedia(p.image)) p.image = null;
+    return projects;
+  });
   return cache;
 }

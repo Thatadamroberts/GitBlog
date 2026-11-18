@@ -65,11 +65,11 @@ const slugs = (tags: Tag[]) => tags.map((t) => t.slug).join(' ');
     {projects.map((p) => (
       <li class:list={['card', { featured: p.featured }]} data-type={slugs(p.types)} data-tech={slugs(p.tech)}>
         <div class="thumb">
-          <img src={p.image} alt="" loading="lazy" />
+          {p.image ? <img src={p.image} alt="" loading="lazy" /> : <div class="no-image" aria-hidden="true">{p.title.charAt(0)}</div>}
           {p.play && <span class="play-badge">▶ Play</span>}
         </div>
         <div class="card-body">
-          <h2><a class="card-link" href={`${base}projects/${p.slug}/`}>{p.title}</a></h2>
+          <h2><a class="card-link" href={`${base}projects/${p.slug}/`}>{p.title}</a>{p.private && <span class="private-badge" title="Private repository">🔒<span class="visually-hidden"> Private repository</span></span>}</h2>
           {p.summary && <p>{p.summary}</p>}
           <div class="meta">
             {shownTypes(p.types).map((t) => <a class="tag tag-type" href={`${base}?type=${t.slug}`} data-filter-facet="type" data-slug={t.slug}>{t.label}</a>)}
