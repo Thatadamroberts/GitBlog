@@ -2,7 +2,7 @@
 import '../styles/global.css';
 import config from '../../site.config';
 
-interface Props { title?: string; description?: string; image?: string }
+interface Props { title?: string; description?: string; image?: string | null }
 const { title, description = config.bio, image } = Astro.props;
 const pageTitle = title ? `${title} · ${config.title}` : config.title;
 const home = import.meta.env.BASE_URL;
@@ -16,7 +16,7 @@ const home = import.meta.env.BASE_URL;
     <meta name="description" content={description} />
     <meta property="og:title" content={pageTitle} />
     <meta property="og:description" content={description} />
-    {image && <meta property="og:image" content={image} />}
+    {image && <meta property="og:image" content={new URL(image, Astro.site ?? Astro.url).href} />}
   </head>
   <body>
     <header class="site-header">

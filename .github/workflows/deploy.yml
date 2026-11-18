@@ -32,7 +32,8 @@ jobs:
         uses: actions/configure-pages@v5
       - run: npm run build
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # GITBLOG_TOKEN (optional) can also read your private repos; see README.
+          GITHUB_TOKEN: ${{ secrets.GITBLOG_TOKEN || secrets.GITHUB_TOKEN }}
           SITE: ${{ steps.pages.outputs.origin }}
           BASE_PATH: ${{ steps.pages.outputs.base_path }}
       - uses: actions/upload-pages-artifact@v3

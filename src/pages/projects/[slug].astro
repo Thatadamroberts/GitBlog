@@ -15,19 +15,21 @@ const updated = new Date(p.updatedAt).toLocaleDateString('en-GB', { year: 'numer
 <Base title={p.title} description={p.summary} image={p.image}>
   <article class="project">
     <a class="back" href={import.meta.env.BASE_URL}>← All projects</a>
-    <h1>{p.title}</h1>
+    <h1>{p.title}{p.private && <span class="private-badge" title="Private repository">🔒<span class="visually-hidden"> Private repository</span></span>}</h1>
     {p.summary && <p class="lede">{p.summary}</p>}
 
     <div class="actions">
       {p.play && <a class="button play-button" href={p.play} data-play-start={p.embed ? '' : undefined}>▶ Play</a>}
-      <a class:list={['button', { secondary: p.play }]} href={p.url}>View on GitHub</a>
+      {p.private
+        ? <span class="private-note">Private repository: the code isn't public</span>
+        : <a class:list={['button', { secondary: p.play }]} href={p.url}>View on GitHub</a>}
       {p.homepage && p.homepage !== p.play && <a class="button secondary" href={p.homepage}>Live site</a>}
     </div>
 
     {p.embed ? (
       <figure class="player" id="play" data-src={p.play} data-title={`Play ${p.title}`}>
         <div class="player-stage">
-          <img class="hero" src={p.image} alt={p.imageAlt} />
+          {p.image ? <img class="hero" src={p.image} alt={p.imageAlt} /> : <div class="hero no-image" aria-hidden="true">{p.title.charAt(0)}</div>}
           <button class="player-start" type="button" data-play-start>
             <span class="player-icon" aria-hidden="true">▶</span>
             <span>Play {p.title} here</span>
@@ -42,7 +44,7 @@ const updated = new Date(p.updatedAt).toLocaleDateString('en-GB', { year: 'numer
         </figcaption>
       </figure>
     ) : (
-      <img class="hero" src={p.image} alt={p.imageAlt} />
+      p.image ? <img class="hero" src={p.image} alt={p.imageAlt} /> : <div class="hero no-image" aria-hidden="true">{p.title.charAt(0)}</div>
     )}
 
     <dl class="facts">
