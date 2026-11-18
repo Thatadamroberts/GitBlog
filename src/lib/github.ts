@@ -172,7 +172,7 @@ function toProject(repo: RepoNode): Project {
     ? data.play
     : (playable || topics.includes('game')) ? homepage : null;
 
-  const { types, tech } = classify(repo, topics);
+  const { types, tech } = classify(repo, topics, data);
   const title = data.title ?? repo.name;
   return {
     slug: repo.name.toLowerCase(),
@@ -207,20 +207,45 @@ export function tag(slug: string, fallback?: string): Tag {
   return { slug, label: config.labels[slug] ?? fallback ?? slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) };
 }
 
-/** The project's type (Game, Productivity or Other), set in site.config.ts or by a topic. */
-function projectType(repo: RepoNode, topics: string[]): Tag {
-  const set = config.projectTypes[repo.name];
-  const slug = set && (config.types.includes(set) || set === config.otherType.slug)
-    ? set
-    : config.types.find((t) => topics.includes(t));
+const TYPE_SLUGS = () => [...config.types, config.otherType.slug];
+
+/** "Games", " game " → "game"; anything that isn't a known type → undefined. */
+function normaliseType(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  const v = value.trim().toLowerCase();
+  const known = TYPE_SLUGS();
+  if (known.includes(v)) return v;
+  const singular = v.replace(/s$/, '');
+  return known.includes(singular) ? singular : undefined;
+}
+
+/**
+ * The project's type (Game, Productivity or Other). First match wins:
+ * `type:` in post.md, then `projectTypes` in site.config.ts, then a matching GitHub topic.
+ */
+function projectType(repo: RepoNode, topics: string[], data: Record<string, any>): Tag {
+  const slug = normaliseType(data.type)
+    ?? normaliseType(config.projectTypes[repo.name])
+    ?? config.types.find((t) => topics.includes(t));
   return !slug || slug === config.otherType.slug ? { ...config.otherType } : tag(slug);
 }
 
-/** Type from config or topics; tech from the repo's main languages followed by its other topics. */
-function classify(repo: RepoNode, topics: string[]) {
-  const types = [projectType(repo, topics)];
+/** `tags:` in post.md, as a YAML list or a comma-separated string. */
+function postTags(value: unknown): string[] {
+  const list = Array.isArray(value) ? value : typeof value === 'string' ? value.split(',') : [];
+  return list.map((t) => String(t).trim()).filter(Boolean);
+}
+
+/**
+ * Type from post.md, config or topics. "Built with" lists the repo's main languages, then its
+ * GitHub topics, then the post's own `tags`. Tags that slugify the same (e.g. "Jetpack Compose"
+ * and the topic jetpack-compose) become one chip.
+ */
+function classify(repo: RepoNode, topics: string[], data: Record<string, any>) {
+  const types = [projectType(repo, topics, data)];
   const tech: Tag[] = [];
-  const add = (t: Tag) => { if (!tech.some((x) => x.slug === t.slug)) tech.push(t); };
+  const skip = new Set([config.topic, ...TYPE_SLUGS()]);
+  const add = (t: Tag) => { if (t.slug && !skip.has(t.slug) && !tech.some((x) => x.slug === t.slug)) tech.push(t); };
   const langs = repo.languages;
   for (const e of langs?.edges ?? []) {
     if (config.ignoreLanguages.includes(e.node.name)) continue;
@@ -228,7 +253,9 @@ function classify(repo: RepoNode, topics: string[]) {
     add(tag(slugify(e.node.name), e.node.name));
   }
   if (!tech.length && repo.primaryLanguage) add(tag(slugify(repo.primaryLanguage.name), repo.primaryLanguage.name));
-  for (const t of topics) if (t !== config.topic && !config.types.includes(t)) add(tag(t));
+  for (const t of topics) add(tag(t));
+  // Keep the author's capitalisation ("SharePoint") unless site.config.ts has a label for it.
+  for (const raw of postTags(data.tags)) add(tag(slugify(raw), /[A-Z]/.test(raw) ? raw : undefined));
   return { types, tech };
 }
 

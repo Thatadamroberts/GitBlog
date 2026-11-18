@@ -8,14 +8,14 @@ export default {
 
   /**
    * The "Type" filter: every project is a Game, Productivity or Other.
-   * A project's type comes from `projectTypes` below if it's listed there, otherwise from a
-   * matching GitHub topic (`game` or `productivity`). Anything else counts as Other.
+   * The first of these wins: `type:` in the repo's .gitblog/post.md, then `projectTypes` below,
+   * then a matching GitHub topic (`game` or `productivity`). Anything else counts as Other.
    * Order here is the order of the filter chips; Other always comes last.
    */
   types: ['game', 'productivity'],
   otherType: { slug: 'other', label: 'Other' },
 
-  /** Type for each repo, by repo name. Overrides topics, so you don't have to tag every repo. */
+  /** Fallback type for each repo, by repo name, for posts that don't set `type:` themselves. */
   projectTypes: {
     SkyReign: 'game',
     'Zombie-Nation': 'game',
