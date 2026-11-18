@@ -25,6 +25,8 @@ content lives in its own repository; this repo only holds the site.
    order: 1                      # manual sort (lower first); default: most recently pushed
    image: .gitblog/demo.gif      # override the hero image
    imageAlt: Dashboard showing today's readings
+   type: productivity            # game, productivity or other (filters the front page)
+   tags: [raspberry-pi, iot]     # extra "Built with" tags, as a list or "a, b, c"
    playable: true                # embed the game on its page (see below)
    play: https://example.com/    # optional: where to play it, if not the repo's Website field
    ---
@@ -46,18 +48,28 @@ Forks and archived repos are skipped.
 
 ## Tags and filters
 
-The front page has two rows of filter chips, both built from GitHub:
+The front page has two rows of filter chips. The easiest place to set both is the front-matter at
+the top of each repo's `.gitblog/post.md`:
 
-- **Type**: what a project is. These come from the repo's GitHub topics that are listed under
-  `types` in `site.config.ts` (to start with: `game`, `productivity`, `health`, `m365`, `history`,
-  `tool`). Tag a repo with the topic `game` and it appears under *Game*.
-- **Built with**: the repo's main languages (anything making up at least 10% of its code, ignoring
-  build-script languages such as Shell), followed by every other topic, such as `android`, `pwa`
-  or `jetpack-compose`.
+```yaml
+type: game                 # game, productivity or other
+tags: [canvas, roguelike]  # or: tags: canvas, roguelike
+```
 
-GitHub topics are lowercase, so `labels` in `site.config.ts` gives them display names
-(`m365` → *Microsoft 365*, `pwa` → *PWA*). Add a new type by adding its topic to `types` and a
-label if it needs one.
+- **Type**: every project is a **Game**, **Productivity** or **Other**. The first of these wins:
+  `type:` in `post.md`, then the project's entry in `projectTypes` in `site.config.ts`, then a
+  `game` or `productivity` GitHub topic. Anything else counts as Other. Other is a filter option
+  only, so it isn't shown as a tag on cards.
+- **Built with**: the repo's main languages (anything making up at least 10% of its code,
+  ignoring build-script languages such as Shell), then its GitHub topics, then the post's `tags`.
+  Tags that mean the same thing are merged, so `Jetpack Compose`, `jetpack-compose` and the topic
+  `jetpack-compose` make one chip.
+
+Display names come from `labels` in `site.config.ts` (`m365` → *Microsoft 365*, `pwa` → *PWA*).
+A tag written with capitals in `post.md`, such as `SharePoint`, keeps them if there's no label.
+
+Tags are read from front-matter rather than from hashtags in the post text, because hashtags
+would show in the post itself and clash with Markdown headings and names like `C#`.
 
 Picking several chips in one row shows projects with any of them; picking chips in both rows
 narrows to projects matching both. The filter is kept in the address (for example

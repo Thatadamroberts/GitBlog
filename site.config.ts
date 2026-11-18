@@ -7,20 +7,37 @@ export default {
   bio: 'Things I have built, and the stories behind them.',
 
   /**
-   * GitHub topics that describe what a project *is*. They appear in the "Type"
-   * filter. Every other topic, plus the repo's main languages, goes under "Built with".
-   * Order here is the order of the filter chips.
+   * The "Type" filter: every project is a Game, Productivity or Other.
+   * The first of these wins: `type:` in the repo's .gitblog/post.md, then `projectTypes` below,
+   * then a matching GitHub topic (`game` or `productivity`). Anything else counts as Other.
+   * Order here is the order of the filter chips; Other always comes last.
    */
-  types: ['game', 'productivity', 'health', 'm365', 'history', 'tool'],
+  types: ['game', 'productivity'],
+  otherType: { slug: 'other', label: 'Other' },
+
+  /** Fallback type for each repo, by repo name, for posts that don't set `type:` themselves. */
+  projectTypes: {
+    SkyReign: 'game',
+    'Zombie-Nation': 'game',
+    Snakey: 'game',
+    DinoTrouble: 'game',
+    ShrewsburyExplorer: 'game',
+    ToDoRPG: 'productivity',
+    M365Tracker: 'productivity',
+    'SharePoint-Site-Health': 'productivity',
+    ServedUp: 'other',
+  } as Record<string, string>,
 
   /** Display names for topics and languages (GitHub topics are always lowercase). */
   labels: {
     game: 'Game',
     productivity: 'Productivity',
-    health: 'Health',
     m365: 'Microsoft 365',
-    history: 'History',
-    tool: 'Tool',
+    sharepoint: 'SharePoint',
+    spfx: 'SPFx',
+    expo: 'Expo',
+    godot: 'Godot',
+    gdscript: 'GDScript',
     pwa: 'PWA',
     android: 'Android',
     canvas: 'Canvas',
