@@ -19,7 +19,7 @@ export interface Project {
   play: string | null;
   /** Embed the game on the project page (front-matter `playable: true`). */
   embed: boolean;
-  /** What the project is: topics listed in `types` in site.config.ts. */
+  /** What the project is: one of Game, Productivity or Other (see `types` in site.config.ts). */
   types: Tag[];
   /** What it's built with: main languages plus every other topic. */
   tech: Tag[];
@@ -207,9 +207,18 @@ export function tag(slug: string, fallback?: string): Tag {
   return { slug, label: config.labels[slug] ?? fallback ?? slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) };
 }
 
-/** Types from topics; tech from the repo's main languages followed by its other topics. */
+/** The project's type (Game, Productivity or Other), set in site.config.ts or by a topic. */
+function projectType(repo: RepoNode, topics: string[]): Tag {
+  const set = config.projectTypes[repo.name];
+  const slug = set && (config.types.includes(set) || set === config.otherType.slug)
+    ? set
+    : config.types.find((t) => topics.includes(t));
+  return !slug || slug === config.otherType.slug ? { ...config.otherType } : tag(slug);
+}
+
+/** Type from config or topics; tech from the repo's main languages followed by its other topics. */
 function classify(repo: RepoNode, topics: string[]) {
-  const types = config.types.filter((t) => topics.includes(t)).map((t) => tag(t));
+  const types = [projectType(repo, topics)];
   const tech: Tag[] = [];
   const add = (t: Tag) => { if (!tech.some((x) => x.slug === t.slug)) tech.push(t); };
   const langs = repo.languages;

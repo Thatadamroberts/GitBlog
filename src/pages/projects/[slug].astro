@@ -1,6 +1,7 @@
 ---
 import Base from '../../layouts/Base.astro';
 import { getProjects, type Project } from '../../lib/github';
+import config from '../../../site.config';
 
 export async function getStaticPaths() {
   const projects = await getProjects();
@@ -51,7 +52,7 @@ const updated = new Date(p.updatedAt).toLocaleDateString('en-GB', { year: 'numer
     </dl>
     {(p.types.length > 0 || p.tech.length > 0) && (
       <div class="meta">
-        {p.types.map((t) => <a class="tag tag-type" href={`${home}?type=${t.slug}`}>{t.label}</a>)}
+        {p.types.filter((t) => t.slug !== config.otherType.slug).map((t) => <a class="tag tag-type" href={`${home}?type=${t.slug}`}>{t.label}</a>)}
         {p.tech.map((t) => <a class="tag" href={`${home}?tech=${t.slug}`}>{t.label}</a>)}
       </div>
     )}

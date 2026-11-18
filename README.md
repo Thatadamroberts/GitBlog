@@ -46,18 +46,19 @@ Forks and archived repos are skipped.
 
 ## Tags and filters
 
-The front page has two rows of filter chips, both built from GitHub:
+The front page has two rows of filter chips:
 
-- **Type**: what a project is. These come from the repo's GitHub topics that are listed under
-  `types` in `site.config.ts` (to start with: `game`, `productivity`, `health`, `m365`, `history`,
-  `tool`). Tag a repo with the topic `game` and it appears under *Game*.
+- **Type**: every project is a **Game**, **Productivity** or **Other**. A project's type is set by
+  name in `projectTypes` in `site.config.ts`, or failing that by a `game` or `productivity` GitHub
+  topic. Anything else counts as Other. Other is a filter option only, so it isn't shown as a tag
+  on cards.
 - **Built with**: the repo's main languages (anything making up at least 10% of its code, ignoring
   build-script languages such as Shell), followed by every other topic, such as `android`, `pwa`
   or `jetpack-compose`.
 
 GitHub topics are lowercase, so `labels` in `site.config.ts` gives them display names
-(`m365` → *Microsoft 365*, `pwa` → *PWA*). Add a new type by adding its topic to `types` and a
-label if it needs one.
+(`m365` → *Microsoft 365*, `pwa` → *PWA*). To add another type, add its topic to `types` and a
+label for it.
 
 Picking several chips in one row shows projects with any of them; picking chips in both rows
 narrows to projects matching both. The filter is kept in the address (for example

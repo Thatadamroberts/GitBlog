@@ -16,7 +16,10 @@ function facet(pick: (p: (typeof projects)[number]) => Tag[]) {
   }
   return [...counts.values()];
 }
-const typeChips = facet((p) => p.types).sort((a, b) => config.types.indexOf(a.tag.slug) - config.types.indexOf(b.tag.slug));
+const typeOrder = [...config.types, config.otherType.slug];
+const typeChips = facet((p) => p.types).sort((a, b) => typeOrder.indexOf(a.tag.slug) - typeOrder.indexOf(b.tag.slug));
+// "Other" is a filter option only; it isn't shown as a tag on cards.
+const shownTypes = (tags: Tag[]) => tags.filter((t) => t.slug !== config.otherType.slug);
 const techChips = facet((p) => p.tech).sort((a, b) => b.n - a.n || a.tag.label.localeCompare(b.tag.label));
 const showFilters = projects.length > 1 && (typeChips.length > 0 || techChips.length > 1);
 const slugs = (tags: Tag[]) => tags.map((t) => t.slug).join(' ');
@@ -69,7 +72,7 @@ const slugs = (tags: Tag[]) => tags.map((t) => t.slug).join(' ');
           <h2><a class="card-link" href={`${base}projects/${p.slug}/`}>{p.title}</a></h2>
           {p.summary && <p>{p.summary}</p>}
           <div class="meta">
-            {p.types.map((t) => <a class="tag tag-type" href={`${base}?type=${t.slug}`} data-filter-facet="type" data-slug={t.slug}>{t.label}</a>)}
+            {shownTypes(p.types).map((t) => <a class="tag tag-type" href={`${base}?type=${t.slug}`} data-filter-facet="type" data-slug={t.slug}>{t.label}</a>)}
             {p.tech.slice(0, 4).map((t) => <a class="tag" href={`${base}?tech=${t.slug}`} data-filter-facet="tech" data-slug={t.slug}>{t.label}</a>)}
           </div>
         </div>
